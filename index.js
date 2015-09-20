@@ -39,13 +39,23 @@ InfluxOutput.prototype.toString = function toString()
 
 InfluxOutput.prototype._write = function _write(event, encoding, callback)
 {
-	var point = _.pick(event, function(v) { return !_.isObject(v) && !_.isArray(v); });
+	if (event.name === 'heartbeat') return callback();
+	var point = { value: event.value };
+
+	var tags = _.pick(event, function(v, k)
+	{
+		if (k === 'time') return false;
+		if (k === 'value') return false;
+		return !_.isObject(v) && !_.isArray(v);
+	});
+
 	if (event.time)
 		point.time = event.time;
-	if (point.time && typeof point.time !== 'object') point.time = new Date(point.time);
+	if (point.time && typeof point.time !== 'object')
+		point.time = new Date(point.time);
 
 	var self = this;
-	self.client.writePoint(event.name, point, function(err)
+	self.client.writePoint(event.name, point, tags, function(err)
 	{
 		if (err)
 		{
