@@ -1,0 +1,31 @@
+{
+  "name": "numbat-influx",
+  "description": "a numbat sink for influx version 0.9",
+  "version": "0.0.0",
+  "author": "C J Silverio <ceejceej@gmail.com>",
+  "dependencies": {
+    "bole": "~2.0.0",
+    "influx": "~4.0.1",
+    "lodash": "~3.10.1"
+  },
+  "devDependencies": {
+    "eslint": "~1.5.0",
+    "istanbul": "~0.3.20",
+    "mocha": "~2.3.2",
+    "must": "~0.12.0",
+    "sinon": "~1.16.1"
+  },
+  "keywords": [
+    "influxdb",
+    "metrics",
+    "numbat"
+  ],
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "coverage": "istanbul cover _mocha test --recursive -- -u exports -R spec && open coverage/lcov-report/index.html",
+    "lint": "eslint *.js",
+    "test": "mocha -R spec test.js",
+    "travis": "npm run lint && npm test"
+  }
+}
