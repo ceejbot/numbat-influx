@@ -1,7 +1,7 @@
 {
   "name": "numbat-influx",
   "description": "a numbat sink for influx version 0.9",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "C J Silverio <ceejceej@gmail.com>",
   "dependencies": {
     "bole": "~2.0.0",
