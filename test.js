@@ -9,14 +9,15 @@ var
 ;
 
 function MockClient() {}
-MockClient.prototype.writePoint = function writePoint(n, p, cb)
+MockClient.prototype.writePoint = function writePoint(n, p, t, cb)
 {
 	this.name = n;
 	this.point = p;
+	this.tags = t;
 	process.nextTick(cb);
 };
 
-function writePointFail(n, p, cb)
+function writePointFail(n, p, t, cb)
 {
 	process.nextTick(function()
 	{
@@ -129,13 +130,15 @@ describe('influx client', function()
 		var output = new Influx(mockopts);
 		output.client = new MockClient();
 
-		output.write({ name: 'test', value: 4 }, function()
+		output.write({ name: 'test', value: 4, tag: 't' }, function()
 		{
 			output.client.must.have.property('name');
 			output.client.name.must.equal('test');
 			output.client.must.have.property('point');
-			output.client.point.name.must.equal('test');
+			output.client.point.must.be.an.object();
 			output.client.point.value.must.equal(4);
+			output.client.tags.must.be.an.object();
+			output.client.tags.tag.must.equal('t');
 			done();
 		});
 	});

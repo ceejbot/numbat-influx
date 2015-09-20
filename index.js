@@ -46,6 +46,7 @@ InfluxOutput.prototype._write = function _write(event, encoding, callback)
 	{
 		if (k === 'time') return false;
 		if (k === 'value') return false;
+		if (k === 'name') return false;
 		return !_.isObject(v) && !_.isArray(v);
 	});
 
