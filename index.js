@@ -20,8 +20,8 @@ var InfluxOutput = module.exports = function InfluxOutput(opts)
 
 	this.options = opts;
 	this.client = Influx(opts);
-	this.log = bole('influx');
-	this.log.info('influx output configured');
+	this.log = bole('influx-9');
+	this.log.info('influx output configured for ' + opts.database);
 };
 util.inherits(InfluxOutput, stream.Writable);
 
