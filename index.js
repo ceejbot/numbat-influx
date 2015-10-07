@@ -20,6 +20,12 @@ var InfluxOutput = module.exports = function InfluxOutput(opts)
 
 	this.options = opts;
 	this.client = Influx(opts);
+
+	this.batch = {};
+	this.batchLength = 0;
+	// Default to 1 to be backwards-compatible.
+	this.batchSize = opts.batchSize || 1;
+
 	this.log = bole('influx-9');
 	this.log.info('influx output configured for ' + opts.database);
 };
@@ -56,28 +62,41 @@ InfluxOutput.prototype._write = function _write(event, encoding, callback)
 		point.time = new Date(point.time);
 
 	var self = this;
-	self.client.writePoint(event.name, point, tags, function(err)
+
+	++self.batchLength;
+	if (!self.batch[event.name])
+		self.batch[event.name] = [[point, tags]];
+	else
+		self.batch[event.name].push([point, tags]);
+
+	if (self.batchLength === self.batchSize)
 	{
-		if (err)
+		var batch = self.batch;
+		self.batch = {};
+		self.batchLength = 0;
+		self.client.writeSeries(batch, function(err)
 		{
-			// throttle error reporting
-			if (self.lasterror + self.THROTTLE < Date.now())
+			if (err)
 			{
-				self.lasterror = Date.now();
-				if (self.errcount > 0)
-					self.log.error(self.errcount + ' error(s) writing points to influx suppressed');
-				else
+				// throttle error reporting
+				if (self.lasterror + self.THROTTLE < Date.now())
 				{
-					self.log.error('failure writing a point to influx:');
-					self.log.error(event.name, point);
-					self.log.error(err);
+					self.lasterror = Date.now();
+					if (self.errcount > 0)
+						self.log.error(self.errcount + ' error(s) writing points to influx suppressed');
+					else
+					{
+						self.log.error('failure writing a point to influx:');
+						self.log.error(event.name, point);
+						self.log.error(err);
+					}
+					self.errcount = 0;
 				}
-				self.errcount = 0;
+				else
+					self.errcount++;
 			}
-			else
-				self.errcount++;
-		}
-	});
+		});
+	}
 
 	// we are firing & forgetting.
 	callback();

@@ -9,15 +9,17 @@ var
 ;
 
 function MockClient() {}
-MockClient.prototype.writePoint = function writePoint(n, p, t, cb)
+MockClient.prototype.writeSeries = function writePoint(series, cb)
 {
-	this.name = n;
-	this.point = p;
-	this.tags = t;
+	this.series = series;
+	// Keep the old test API for the first data point.
+	this.name = Object.keys(series)[0];
+	this.point = series[this.name][0][0];
+	this.tags = series[this.name][0][1];
 	process.nextTick(cb);
 };
 
-function writePointFail(n, p, t, cb)
+function writeSeriesFail(series, cb)
 {
 	process.nextTick(function()
 	{
@@ -147,7 +149,7 @@ describe('influx client', function()
 	{
 		var output = new Influx(mockopts);
 		output.client = new MockClient();
-		output.client.writePoint = writePointFail;
+		output.client.writeSeries = writeSeriesFail;
 
 		var count = 0;
 		output.log.error = function()
@@ -174,7 +176,7 @@ describe('influx client', function()
 	{
 		var output = new Influx(mockopts);
 		output.client = new MockClient();
-		output.client.writePoint = writePointFail;
+		output.client.writeSeries = writeSeriesFail;
 		var spy = output.log.error = sinon.spy();
 
 		output.write({ name: 'test', value: 4 }, function()
@@ -190,6 +192,23 @@ describe('influx client', function()
 					done();
 				});
 			});
+		});
+	});
+
+	it('batches events', function(done)
+	{
+		var opts = _.clone(mockopts);
+		opts.batchSize = 2;
+		var output = new Influx(opts);
+		output.client = new MockClient();
+
+		output.write({ name: 'test_a', value: 4 }, function() {});
+		output.write({ name: 'test_b', value: 5 }, function()
+		{
+			Object.keys(output.client.series).length.must.be.equal(2);
+			output.client.series.test_a.must.be.an.object();
+			output.client.series.test_b.must.be.an.object();
+			done();
 		});
 	});
 });
