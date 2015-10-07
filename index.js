@@ -69,7 +69,7 @@ InfluxOutput.prototype._write = function _write(event, encoding, callback)
 	else
 		self.batch[event.name].push([point, tags]);
 
-	if (self.batchLength === self.batchSize)
+	if (self.batchLength >= self.batchSize)
 	{
 		var batch = self.batch;
 		self.batch = {};
