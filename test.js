@@ -208,6 +208,9 @@ describe('influx client', function()
 			Object.keys(output.client.series).length.must.be.equal(2);
 			output.client.series.test_a.must.be.an.object();
 			output.client.series.test_b.must.be.an.object();
+			output.client.series.test_a[0][0].value.must.be.equal(4);
+			output.client.series.test_b[0][0].value.must.be.equal(5);
+			output.batchLength.must.be.equal(0);
 			done();
 		});
 	});
