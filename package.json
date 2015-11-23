@@ -9,8 +9,8 @@
     "lodash": "~3.10.1"
   },
   "devDependencies": {
-    "eslint": "~1.5.0",
-    "istanbul": "~0.3.20",
+    "eslint": "~1.10.1",
+    "istanbul": "~0.4.0",
     "mocha": "~2.3.2",
     "must": "~0.13.1",
     "sinon": "~1.17.0"
