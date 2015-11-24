@@ -99,6 +99,14 @@ describe('influx client', function()
 		output.client.request.defaultRequestOptions.timeout.must.equal(50);
 	});
 
+	it('respects a batchTimeout option if you provide one', function()
+	{
+		var opts = _.clone(mockopts);
+		opts.batchTimeout = 50;
+		var output = new Influx(opts);
+		output.options.batchTimeout.must.equal(50);
+	});
+
 	it('must be a writable stream', function()
 	{
 		var output = new Influx(mockopts);
@@ -139,6 +147,33 @@ describe('influx client', function()
 			output.client.point.value.must.equal(4);
 			output.client.tags.must.be.an.object();
 			output.client.tags.tag.must.equal('t');
+			done();
+		});
+	});
+
+	it('cleans up tags', function(done)
+	{
+		var output = new Influx(mockopts);
+		output.client = new MockClient();
+
+		output.write({ name: 'test', value: 4, status: 'ok', tag: 't', time: Date.now() }, function()
+		{
+			output.client.tags.must.be.an.object();
+			output.client.tags.must.not.have.property('time');
+			output.client.tags.must.not.have.property('value');
+			output.client.tags.status.must.equal('ok');
+			done();
+		});
+	});
+
+	it('does not write heartbeats', function(done)
+	{
+		var output = new Influx(mockopts);
+		output.client = new MockClient();
+
+		output.write({ name: 'heartbeat', value: 4, status: 'ok', tag: 't', time: Date.now() }, function()
+		{
+			output.client.must.not.have.property('name');
 			done();
 		});
 	});
@@ -192,11 +227,12 @@ describe('influx client', function()
 	it('batches events', function(done)
 	{
 		var opts = _.clone(mockopts);
-		opts.batchSize = 2;
+		opts.batchSize = 3;
 		var output = new Influx(opts);
 		output.client = new MockClient();
 
 		output.write({ name: 'test_a', value: 4 }, function() {});
+		output.write({ name: 'test_a', value: 7 }, function() {});
 		output.write({ name: 'test_b', value: 5 }, function()
 		{
 			Object.keys(output.client.series).length.must.be.equal(2);
@@ -220,7 +256,7 @@ describe('influx client', function()
 		output.client.writeSeries = function(series, cb)
 		{
 			Object.keys(series).length.must.equal(1);
-			Date.now().must.be.below(start + 100);
+			Date.now().must.be.below(start + 150);
 			done();
 		};
 
