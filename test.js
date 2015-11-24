@@ -9,7 +9,7 @@ var
 ;
 
 function MockClient() {}
-MockClient.prototype.writeSeries = function writePoint(series, cb)
+MockClient.prototype.writeSeries = function writeSeries(series, cb)
 {
 	this.series = series;
 	// Keep the old test API for the first data point.
@@ -156,12 +156,8 @@ describe('influx client', function()
 		{
 			count++;
 			if (count === 1)
-				arguments[0].must.equal('failure writing a point to influx:');
+				arguments[0].must.equal('failure writing batch to influx:');
 			else if (count === 2)
-			{
-				arguments[0].must.equal('test');
-			}
-			else if (count === 3)
 			{
 				arguments[0].must.be.instanceof(Error);
 				arguments[0].message.must.equal('oh dear I failed');
@@ -181,10 +177,10 @@ describe('influx client', function()
 
 		output.write({ name: 'test', value: 4 }, function()
 		{
-			spy.calledThrice.must.be.true();
+			spy.calledTwice.must.be.true();
 			output.write({ name: 'test', value: 4 }, function()
 			{
-				spy.callCount.must.be.below(4);
+				spy.callCount.must.be.below(3);
 				output.THROTTLE = 0; // stop throttling
 				output.write({ name: 'test', value: 4 }, function()
 				{
@@ -213,5 +209,24 @@ describe('influx client', function()
 			output.batchLength.must.be.equal(0);
 			done();
 		});
+	});
+
+	it('sends an under-sized batch after the timeout expires', function(done)
+	{
+		var opts = _.clone(mockopts);
+		opts.batchSize = 1000;
+		opts.batchTimeout = 50; // in ms
+		var output = new Influx(opts);
+		output.client = new MockClient();
+
+		output.client.writeSeries = function(series, cb)
+		{
+			Object.keys(series).length.must.equal(1);
+			Date.now().must.be.below(start + 100);
+			done();
+		};
+
+		var start = Date.now();
+		output.write({ name: 'test_a', value: 4 });
 	});
 });
