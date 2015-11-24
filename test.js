@@ -6,10 +6,10 @@ var
 	demand = require('must'),
 	sinon  = require('sinon'),
 	Influx = require('./index')
-;
+	;
 
 function MockClient() {}
-MockClient.prototype.writeSeries = function writePoint(series, cb)
+MockClient.prototype.writeSeries = function writeSeries(series, cb)
 {
 	this.series = series;
 	// Keep the old test API for the first data point.
@@ -29,8 +29,7 @@ function writeSeriesFail(series, cb)
 
 describe('influx client', function()
 {
-	var mockopts =
-	{
+	var mockopts = {
 		hosts:    [{ host: 'localhost', port:  8086 }],
 		username: 'numbat',
 		password: 'my-top-secret',
@@ -74,8 +73,7 @@ describe('influx client', function()
 	{
 		function shouldThrow()
 		{
-			return new Influx(
-			{
+			return new Influx({
 				hosts:    [ { host:'localhost', port:8086}],
 				username: 'foo',
 				password: 'password'
@@ -99,6 +97,14 @@ describe('influx client', function()
 		var output = new Influx(opts);
 		output.options.requestTimeout.must.equal(50);
 		output.client.request.defaultRequestOptions.timeout.must.equal(50);
+	});
+
+	it('respects a batchTimeout option if you provide one', function()
+	{
+		var opts = _.clone(mockopts);
+		opts.batchTimeout = 50;
+		var output = new Influx(opts);
+		output.options.batchTimeout.must.equal(50);
 	});
 
 	it('must be a writable stream', function()
@@ -145,6 +151,33 @@ describe('influx client', function()
 		});
 	});
 
+	it('cleans up tags', function(done)
+	{
+		var output = new Influx(mockopts);
+		output.client = new MockClient();
+
+		output.write({ name: 'test', value: 4, status: 'ok', tag: 't', time: Date.now() }, function()
+		{
+			output.client.tags.must.be.an.object();
+			output.client.tags.must.not.have.property('time');
+			output.client.tags.must.not.have.property('value');
+			output.client.tags.status.must.equal('ok');
+			done();
+		});
+	});
+
+	it('does not write heartbeats', function(done)
+	{
+		var output = new Influx(mockopts);
+		output.client = new MockClient();
+
+		output.write({ name: 'heartbeat', value: 4, status: 'ok', tag: 't', time: Date.now() }, function()
+		{
+			output.client.must.not.have.property('name');
+			done();
+		});
+	});
+
 	it('handles failures by logging', function(done)
 	{
 		var output = new Influx(mockopts);
@@ -156,12 +189,8 @@ describe('influx client', function()
 		{
 			count++;
 			if (count === 1)
-				arguments[0].must.equal('failure writing a point to influx:');
+				arguments[0].must.equal('failure writing batch to influx:');
 			else if (count === 2)
-			{
-				arguments[0].must.equal('test');
-			}
-			else if (count === 3)
 			{
 				arguments[0].must.be.instanceof(Error);
 				arguments[0].message.must.equal('oh dear I failed');
@@ -181,10 +210,10 @@ describe('influx client', function()
 
 		output.write({ name: 'test', value: 4 }, function()
 		{
-			spy.calledThrice.must.be.true();
+			spy.calledTwice.must.be.true();
 			output.write({ name: 'test', value: 4 }, function()
 			{
-				spy.callCount.must.be.below(4);
+				spy.callCount.must.be.below(3);
 				output.THROTTLE = 0; // stop throttling
 				output.write({ name: 'test', value: 4 }, function()
 				{
@@ -198,11 +227,12 @@ describe('influx client', function()
 	it('batches events', function(done)
 	{
 		var opts = _.clone(mockopts);
-		opts.batchSize = 2;
+		opts.batchSize = 3;
 		var output = new Influx(opts);
 		output.client = new MockClient();
 
 		output.write({ name: 'test_a', value: 4 }, function() {});
+		output.write({ name: 'test_a', value: 7 }, function() {});
 		output.write({ name: 'test_b', value: 5 }, function()
 		{
 			Object.keys(output.client.series).length.must.be.equal(2);
@@ -213,5 +243,24 @@ describe('influx client', function()
 			output.batchLength.must.be.equal(0);
 			done();
 		});
+	});
+
+	it('sends an under-sized batch after the timeout expires', function(done)
+	{
+		var opts = _.clone(mockopts);
+		opts.batchSize = 1000;
+		opts.batchTimeout = 50; // in ms
+		var output = new Influx(opts);
+		output.client = new MockClient();
+
+		output.client.writeSeries = function(series, cb)
+		{
+			Object.keys(series).length.must.equal(1);
+			Date.now().must.be.below(start + 150);
+			done();
+		};
+
+		var start = Date.now();
+		output.write({ name: 'test_a', value: 4 });
 	});
 });
