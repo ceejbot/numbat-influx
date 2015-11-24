@@ -6,7 +6,7 @@ var
 	demand = require('must'),
 	sinon  = require('sinon'),
 	Influx = require('./index')
-;
+	;
 
 function MockClient() {}
 MockClient.prototype.writeSeries = function writeSeries(series, cb)
@@ -29,8 +29,7 @@ function writeSeriesFail(series, cb)
 
 describe('influx client', function()
 {
-	var mockopts =
-	{
+	var mockopts = {
 		hosts:    [{ host: 'localhost', port:  8086 }],
 		username: 'numbat',
 		password: 'my-top-secret',
@@ -74,8 +73,7 @@ describe('influx client', function()
 	{
 		function shouldThrow()
 		{
-			return new Influx(
-			{
+			return new Influx({
 				hosts:    [ { host:'localhost', port:8086}],
 				username: 'foo',
 				password: 'password'

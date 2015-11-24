@@ -5,7 +5,7 @@ var
 	Influx = require('influx'),
 	stream = require('stream'),
 	util   = require('util')
-;
+	;
 
 var InfluxOutput = module.exports = function InfluxOutput(opts)
 {
