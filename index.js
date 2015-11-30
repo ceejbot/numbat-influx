@@ -62,10 +62,12 @@ InfluxOutput.prototype.resetTimer = function resetTimer()
 InfluxOutput.prototype.writeBatch = function writeBatch()
 {
 	var self = this;
+	if (!self.batch || !self.batchLength) return;
 
 	var batch = self.batch;
 	self.batch = {};
 	self.batchLength = 0;
+	self.resetTimer();
 
 	self.client.writeSeries(batch, function(err)
 	{
@@ -87,7 +89,6 @@ InfluxOutput.prototype.writeBatch = function writeBatch()
 			else
 				self.errcount++;
 		}
-		self.resetTimer();
 	});
 };
 

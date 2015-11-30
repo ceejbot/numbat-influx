@@ -249,14 +249,14 @@ describe('influx client', function()
 	{
 		var opts = _.clone(mockopts);
 		opts.batchSize = 1000;
-		opts.batchTimeout = 50; // in ms
+		opts.batchTimeout = 200; // in ms
 		var output = new Influx(opts);
 		output.client = new MockClient();
 
 		output.client.writeSeries = function(series, cb)
 		{
 			Object.keys(series).length.must.equal(1);
-			Date.now().must.be.below(start + 150);
+			Date.now().must.be.below(start + 300);
 			done();
 		};
 
