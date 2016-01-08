@@ -94,7 +94,8 @@ InfluxOutput.prototype.writeBatch = function writeBatch()
 
 InfluxOutput.prototype._write = function _write(event, encoding, callback)
 {
-	if (event.name === 'heartbeat') return callback();
+	if (!event.name) return callback();
+	if (event.name.match(/heartbeat/)) return callback();
 	var point = { value: event.value };
 
 	var tags = _.pick(event, function(v, k)
