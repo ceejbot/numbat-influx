@@ -4,7 +4,7 @@
   "version": "0.1.2",
   "author": "C J Silverio <ceejceej@gmail.com>",
   "bugs": {
-    "url": "https://github.com/ceejbot/numbat-influx/issues"
+    "url": "https://github.com/numbat-metrics/numbat-influx/issues"
   },
   "dependencies": {
     "bole": "~2.0.0",
@@ -12,13 +12,13 @@
     "lodash": "~3.10.1"
   },
   "devDependencies": {
-    "eslint": "~1.10.1",
-    "istanbul": "~0.4.1",
+    "eslint": "~1.10.3",
     "mocha": "~2.3.4",
     "must": "~0.13.1",
+    "nyc": "~5.5.0",
     "sinon": "~1.17.2"
   },
-  "homepage": "https://github.com/ceejbot/numbat-influx#readme",
+  "homepage": "https://github.com/numbat-metrics/numbat-influx#readme",
   "keywords": [
     "influxdb",
     "metrics",
@@ -28,12 +28,12 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ceejbot/numbat-influx.git"
+    "url": "git+https://github.com/numbat-metrics/numbat-influx.git"
   },
   "scripts": {
-    "coverage": "istanbul cover _mocha test --recursive -- -u exports -R spec && open coverage/lcov-report/index.html",
-    "lint": "eslint *.js",
-    "test": "mocha -R spec test.js",
-    "travis": "npm run lint && npm test"
+    "coverage": "nyc check-coverage --lines 95 --functions 95 --branches 95",
+    "lint": "eslint *.js lib/*.js",
+    "test": "nyc mocha -t 5000 --check-leaks --ui exports -R spec test.js",
+    "travis": "npm run lint && npm test && npm run coverage"
   }
 }
