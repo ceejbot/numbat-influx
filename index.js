@@ -98,12 +98,14 @@ InfluxOutput.prototype._write = function _write(event, encoding, callback)
 	if (event.name.match(/heartbeat/)) return callback();
 	var point = { value: event.value };
 
-	var tags = _.pick(event, function(v, k)
+	var tags = {};
+	_.each(event, function(v, k)
 	{
-		if (k === 'time') return false;
-		if (k === 'value') return false;
-		if (k === 'name') return false;
-		return !_.isObject(v) && !_.isArray(v);
+		if (k === 'time') return;
+		if (k === 'value') return;
+		if (k === 'name') return;
+		if (!_.isObject(v) && !_.isArray(v))
+			tags[k] = v;
 	});
 
 	if (event.time)
