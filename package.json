@@ -9,7 +9,7 @@
   "dependencies": {
     "bole": "~2.0.0",
     "influx": "~4.1.0",
-    "lodash": "~4.5.0"
+    "lodash": "~4.16.3"
   },
   "devDependencies": {
     "eslint": "~2.1.0",
