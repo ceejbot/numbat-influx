@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "bole": "~2.0.0",
-    "influx": "~4.1.0",
+    "influx": "~5.0.7",
     "lodash": "~4.5.0"
   },
   "devDependencies": {
