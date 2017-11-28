@@ -20,10 +20,9 @@ var InfluxOutput = module.exports = function InfluxOutput(opts)
 	if (!opts.batchTimeout) opts.batchTimeout = 30000; // in ms
 
 	this.options = opts;
-	this.client = Influx(opts);
+	this.client = new Influx.InfluxDB(opts);
 
-	this.batch = {};
-	this.batchLength = 0;
+	this.batch = [];
 	// Default to 1 to be backwards-compatible.
 	this.batchSize = opts.batchSize || 1;
 
@@ -62,14 +61,13 @@ InfluxOutput.prototype.resetTimer = function resetTimer()
 InfluxOutput.prototype.writeBatch = function writeBatch()
 {
 	var self = this;
-	if (!self.batch || !self.batchLength) return;
+	if (!self.batch || !self.batch.length) return;
 
 	var batch = self.batch;
-	self.batch = {};
-	self.batchLength = 0;
+	self.batch = [];
 	self.resetTimer();
 
-	self.client.writeSeries(batch, function(err)
+	self.client.writePoints(batch, function(err)
 	{
 		if (err)
 		{
@@ -96,16 +94,19 @@ InfluxOutput.prototype._write = function _write(event, encoding, callback)
 {
 	if (!event.name) return callback();
 	if (event.name.match(/heartbeat/)) return callback();
-	var point = { value: event.value };
+	var point = {
+	  measurement: event.name,
+	  fields: { value: event.value }
+	};
 
-	var tags = {};
+	point.tags = {};
 	_.each(event, function(v, k)
 	{
 		if (k === 'time') return;
 		if (k === 'value') return;
 		if (k === 'name') return;
 		if (!_.isObject(v) && !_.isArray(v))
-			tags[k] = v;
+			point.tags[k] = v;
 	});
 
 	if (event.time)
@@ -113,13 +114,9 @@ InfluxOutput.prototype._write = function _write(event, encoding, callback)
 	if (point.time && typeof point.time !== 'object')
 		point.time = new Date(point.time);
 
-	++this.batchLength;
-	if (!this.batch[event.name])
-		this.batch[event.name] = [[point, tags]];
-	else
-		this.batch[event.name].push([point, tags]);
+	this.batch.push(point);
 
-	if (this.batchLength >= this.batchSize || Date.now() > this.nextBatchTime)
+	if (this.batch.length >= this.batchSize || Date.now() > this.nextBatchTime)
 	{
 		this.writeBatch();
 	}
